@@ -87,6 +87,47 @@ From the Redis documentation:
 All the commands in a transaction are serialized and executed sequentially. A request sent by another client will never be served in the middle of the execution of a Redis Transaction. This guarantees that the commands are executed as a single isolated operation.
 ```
 
+Here's a diagram showing the sequential execution of commands in a Redis transaction:
+
+```mermaid
+sequenceDiagram
+    participant Client A
+    participant Redis
+    participant Client B
+    
+    Client B->>Redis: GET key1
+    Redis-->>Client B: (value or nil)
+    
+    Note over Client A, Redis: Transaction Start
+    
+    Client A->>Redis: MULTI
+    Redis-->>Client A: OK
+    
+    Client A->>Redis: SET key1 "value1"
+    Redis-->>Client A: QUEUED
+    
+    Client A->>Redis: SET key2 "value2"
+    Redis-->>Client A: QUEUED
+    
+    Client A->>Redis: SET key3 "value3"
+    Redis-->>Client A: QUEUED
+    
+    Client A->>Redis: EXEC
+    Redis-->>Client A: [OK, OK, OK]
+    
+    Note over Client A, Redis: Transaction Complete
+    
+    Client B->>Redis: GET key1
+    Redis-->>Client B: "value1"
+```
+
+This diagram illustrates how Redis transactions work:
+1. Client B can interact with Redis normally before the transaction
+2. When Client A starts a transaction with MULTI, commands are queued but not executed
+3. During the transaction, no other client can interrupt the command sequence
+4. After EXEC, all commands are executed atomically in sequence
+5. Client B can see the changes only after the transaction is complete
+
 Redis transactions are atomic, with no rollback in case of error:
 
 ```bash
