@@ -1,7 +1,6 @@
 package redistest
 
 import (
-	"context"
 	"fmt"
 	"time"
 
@@ -9,15 +8,21 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-// Main demonstrates a Redis WATCH transaction with concurrent modification
-func Main(gctx *gin.Context) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // No password set
-		DB:       0,  // Use default DB
-	})
-	ctx := context.Background()
+// Handler holds dependencies for the Redis demo handlers
+type Handler struct {
+	Redis *redis.Client
+}
 
+func NewHandler(redis *redis.Client) *Handler {
+	return &Handler{
+		Redis: redis,
+	}
+}
+
+// Main demonstrates a Redis WATCH transaction with concurrent modification
+func (h *Handler) TxPipelineDemo(gctx *gin.Context) {
+	client := h.Redis
+	ctx := gctx
 	// Response map to store all results
 	response := map[string]interface{}{}
 
@@ -107,13 +112,9 @@ func Main(gctx *gin.Context) {
 }
 
 // SyntaxErrorDemo demonstrates Case 1: A syntax error in a transaction causes all commands to be aborted
-func SyntaxErrorDemo(gctx *gin.Context) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // No password set
-		DB:       0,  // Use default DB
-	})
-	ctx := context.Background()
+func (h *Handler) SyntaxErrorDemo(gctx *gin.Context) {
+	client := h.Redis
+	ctx := gctx
 
 	// Clear any existing keys
 	client.Del(ctx, "key1", "key2", "key3", "key4")
@@ -164,13 +165,9 @@ func SyntaxErrorDemo(gctx *gin.Context) {
 }
 
 // LogicErrorDemo demonstrates Case 2: A logical error in a transaction allows other commands to execute
-func LogicErrorDemo(gctx *gin.Context) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // No password set
-		DB:       0,  // Use default DB
-	})
-	ctx := context.Background()
+func (h *Handler) LogicErrorDemo(gctx *gin.Context) {
+	client := h.Redis
+	ctx := gctx
 
 	// Set up initial state - counter is a string, not a number
 	client.Set(ctx, "counter", "hello", 0)
